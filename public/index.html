@@ -2,20 +2,204 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>AirTalk</title>
+<title>BlackVault</title>
 
 <style>
 *{box-sizing:border-box;}
 
+
+body > div.app > div.input-area > img{
+width:38px;
+cursor:pointer;
+opacity:.65;
+transition:all .18s ease;
+filter:grayscale(100%) contrast(140%) brightness(.9);
+}
+
+body > div.app > div.input-area > img:hover{
+opacity:1;
+transform:translateY(-1px);
+filter:grayscale(0%) contrast(160%) brightness(1);
+}
+
+body > div.app > div.input-area > img:active{
+transform:scale(.94);
+opacity:.8;
+}
+
+
+
+
+
+
+
 body{
 margin:0;
 font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-background:#0e1621;
+background:
+radial-gradient(circle at 20% 20%,rgba(14,165,233,.2),transparent 40%),
+radial-gradient(circle at 80% 80%,rgba(34,211,238,.15),transparent 40%),
+#0e1621;
+
+background-size:120% 120%;
+animation:moveGradient 12s ease-in-out infinite;
+
 display:flex;
 justify-content:center;
 align-items:center;
 height:100vh;
 }
+
+/* OVO JE PSEUDO ELEMENT */
+body::before{
+
+
+background:
+radial-gradient(circle at 50% 50%, rgba(14,165,233,.25), transparent 35%),
+radial-gradient(circle at 20% 20%, rgba(14,165,233,.2), transparent 40%),
+radial-gradient(circle at 80% 80%, rgba(34,211,238,.15), transparent 40%);
+animation:floatBg 18s ease-in-out infinite alternate;
+
+}
+
+
+
+
+/* ===== 2025 LOCKSCREEN ===== */
+
+#lockscreen{
+position:fixed;
+inset:0;
+background:radial-gradient(circle at 30% 30%,#0ea5e9 0%,#0f172a 40%,#0e1621 100%);
+display:flex;
+align-items:center;
+justify-content:center;
+z-index:10000;
+}
+
+.lock-card{
+width:350px;
+padding:50px 40px;
+border-radius:30px;
+background:rgba(255,255,255,0.05);
+backdrop-filter:blur(30px);
+text-align:center;
+color:white;
+box-shadow:0 40px 100px rgba(0,0,0,.6);
+animation:fadeIn .6s ease;
+}
+
+.lock-icon{
+width:90px;
+height:90px;
+margin:0 auto 20px;
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:38px;
+background:linear-gradient(135deg,#0ea5e9,#22d3ee);
+box-shadow:0 15px 40px rgba(14,165,233,.5);
+}
+
+.lock-card h2{
+margin:0;
+font-size:20px;
+}
+
+.lock-card p{
+font-size:13px;
+opacity:.7;
+margin-bottom:25px;
+}
+
+.pin-wrapper{
+margin-bottom:15px;
+}
+
+#pinInput{
+width:100%;
+padding:14px;
+font-size:22px;
+letter-spacing:10px;
+text-align:center;
+border:none;
+border-radius:15px;
+background:#0e1621;
+color:WHITE;
+outline:none;
+}
+
+.pin-error{
+color:#ef4444;
+font-size:13px;
+opacity:0;
+transition:.3s;
+}
+
+.pin-error.show{
+opacity:1;
+}
+
+.shake{
+animation:shake .4s;
+}
+
+@keyframes shake{
+0%{transform:translateX(0);}
+25%{transform:translateX(-8px);}
+50%{transform:translateX(8px);}
+75%{transform:translateX(-8px);}
+100%{transform:translateX(0);}
+}
+
+@keyframes fadeIn{
+from{opacity:0;transform:scale(.95);}
+to{opacity:1;transform:scale(1);}
+}
+
+.toast{
+  position: fixed;
+  top: 30px;
+  right: 30px;
+
+  padding: 18px 24px;
+  border-radius: 14px;
+
+  background: rgba(20, 30, 45, 0.85);
+  backdrop-filter: blur(12px);
+
+  border: 1px solid rgba(34,211,238,.4);
+  box-shadow: 0 0 25px rgba(34,211,238,.25);
+
+  color: #22d3ee;
+  font-size: 14px;
+
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all .4s ease;
+
+  pointer-events: none;
+}
+
+.toast-title{
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.toast-sub{
+  font-size: 12px;
+  opacity: .8;
+  margin-top: 4px;
+}
+
+.toast.show{
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+
 
 .app{
 width:420px;
@@ -25,26 +209,30 @@ border-radius:25px;
 display:flex;
 flex-direction:column;
 overflow:hidden;
-box-shadow:0 40px 80px rgba(0,0,0,.6);
+box-shadow:
+0 0 180px rgba(14,165,233,.25),
+0 40px 120px rgba(0,0,0,.95);
 position:relative;
 }
 
-.sidebar{
-position:absolute;
-right:-220px;
-top:70px;
-width:220px;
-height:74%;
-background:#111827;
-transition:.3s;
-padding:15px;
-color:white;
-overflow-y:auto;
-z-index:10;
+.sidebar {
+    position: absolute;
+    right: -220px;   /* sakriven */
+    top: 70px;
+    width: 220px;
+    height: 74%;
+    background: #111827;
+    transition: all .3s ease;
+    padding: 15px;
+    color: white;
+    overflow-y: auto;
+    z-index: 10;
 }
 
-.sidebar.active{
-right:0;
+/* Otvoren */
+.sidebar.active {
+    right: 0;
+    width: 430px;   /* širi kada se otvori */
 }
 
 .sidebar h3{
@@ -62,17 +250,42 @@ font-size:13px;
 
 .header{
 height:70px;
-background:#242f3d;
+background:linear-gradient(180deg,#1f2937,#17212b);
+border-bottom:1px solid rgba(34,211,238,.15);
+position:relative;
+overflow:hidden;
 display:flex;
 align-items:center;
 justify-content:space-between;
 padding:0 15px;
+
 }
 
+.header::after{
+content:"";
+position:absolute;
+top:0;
+left:-100%;
+width:50%;
+height:100%;
+background:linear-gradient(
+90deg,
+transparent,
+rgba(34,211,238,.15),
+transparent
+);
+animation:scan 5s linear infinite;
+}
+
+@keyframes scan{
+0%{left:-100%;}
+100%{left:150%;}
+}
 .header-left{
 display:flex;
 align-items:center;
 gap:12px;
+
 }
 
 .avatar{
@@ -89,6 +302,29 @@ color:white;
 
 .username{color:white;font-weight:600;}
 .status{font-size:13px;color:#4ade80;}
+
+.pin-instruction {
+  margin-top: 18px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: #00eaff;
+  text-align: center;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: pinFadeIn 0.5s ease forwards;
+  animation-delay: 0.2s;
+}
+
+@keyframes pinFadeIn {
+  to {
+    opacity: 0.9;
+    transform: translateY(0);
+  }
+}
+
+
 
 .sidebar-toggle{
 width:40px;
@@ -113,6 +349,88 @@ flex-direction:column;
 gap:10px;
 background:#0e1621;
 }
+
+
+
+
+.typing{
+display:flex;
+align-items:center;
+gap:6px;
+height:20px;
+}
+
+.typing span{
+width:6px;
+height:6px;
+background:#22d3ee;
+border-radius:50%;
+animation:blink 1.2s infinite ease-in-out;
+}
+
+.typing span:nth-child(2){
+animation-delay:.2s;
+}
+
+.typing span:nth-child(3){
+animation-delay:.4s;
+}
+
+@keyframes blink{
+0%, 80%, 100%{
+opacity:.2;
+transform:scale(.8);
+}
+40%{
+opacity:1;
+transform:scale(1);
+}
+}
+
+
+.status-indicator {
+  margin-left: 6px;
+  font-size: 11px;
+  color: #9ca3af;
+  transition: .2s ease;
+}
+
+.status-indicator.read {
+  color: #22d3ee;
+}
+
+
+.date-separator {
+  text-align: center;
+  margin: 15px 0;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,.4);
+}
+
+
+
+.typing span:nth-child(2){animation-delay:.2s;}
+.typing span:nth-child(3){animation-delay:.4s;}
+
+@keyframes blink{
+0%{opacity:.2;}
+20%{opacity:1;}
+100%{opacity:.2;}
+}
+.send-btn:hover{
+box-shadow:0 0 20px #0ea5e9;
+transform:translateY(-2px);
+transition:.2s;
+}
+
+
+@keyframes floatGlow{
+0%{box-shadow:0 0 40px rgba(0,255,255,.08);}
+50%{box-shadow:0 0 70px rgba(0,255,255,.18);}
+100%{box-shadow:0 0 40px rgba(0,255,255,.08);}
+}
+
 
 .message{
 max-width:75%;
@@ -142,6 +460,28 @@ margin-top:5px;
 text-align:right;
 }
 
+
+.status-indicator {
+  margin-left: 6px;
+  font-size: 11px;
+  color: #9ca3af;
+  transition: .2s ease;
+}
+
+.status-indicator.read {
+  color: #22d3ee;
+}
+
+
+.date-separator {
+  text-align: center;
+  margin: 15px 0;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,.4);
+}
+
+
 .input-area{
 background:#242f3d;
 padding:10px;
@@ -169,29 +509,248 @@ cursor:pointer;
 }
 
 .call-card{
-background:#1f2937;
-padding:15px;
-border-radius:15px;
+background:linear-gradient(180deg,#0f172a,#0b1220);
+border:1px solid rgba(255,255,255,.06);
+padding:18px;
+border-radius:14px;
+color:#e5e7eb;
+box-shadow:
+0 15px 40px rgba(0,0,0,.7),
+inset 0 0 0 1px rgba(255,255,255,.03);
 display:flex;
 flex-direction:column;
-gap:8px;
-color:white;
-font-size:14px;
+gap:14px;
 }
+
+
+.call-card div:first-child{
+font-size:11px;
+letter-spacing:2px;
+color:#9ca3af;
+opacity:.8;
+}
+
+
+
+
+
+.message {
+  transition: transform .15s ease, box-shadow .15s ease;
+  cursor: default;
+}
+
+.message:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,.35);
+}
+
+
 
 .call-row{
 display:flex;
 justify-content:space-between;
-align-items:center;
+gap:12px;
 }
 
 .call-btn-small{
-padding:6px 12px;
-border:none;
-border-radius:10px;
-cursor:pointer;
-color:white;
+flex:1;
+padding:10px 0;
+border-radius:8px;
+font-size:12px;
+letter-spacing:1px;
+background:#111827;
+border:1px solid rgba(255,255,255,.08);
+color:#d1d5db;
+transition:.18s ease;
 }
+
+.accept{
+border:1px solid rgba(239,68,68,.4);
+color:#000000; !important;
+}
+
+.accept:hover{
+background:#22c55e;
+color:#000; 
+}
+
+.decline{
+border:1px solid rgba(239,68,68,.4);
+color:#000000; !important;
+}
+
+.decline:hover{
+background:#ef4444;
+color:#000;
+}
+
+.accept,
+.decline{
+cursor:pointer;
+}
+.call-btn-small,
+.call-btn-small.accept,
+.call-btn-small.decline,
+.call-btn-small.end{
+cursor:pointer !important;
+}
+
+
+.call-card::before{
+content:"";
+height:2px;
+width:100%;
+background:linear-gradient(90deg,#22d3ee,#0ea5e9,#22d3ee);
+opacity:.4;
+border-radius:10px;
+}
+
+
+
+
+.in-call-indicator{
+font-size:11px;
+letter-spacing:1px;
+color:#4ade80;
+opacity:.8;
+}
+
+
+.status{
+display:flex;
+align-items:center;
+gap:6px;
+color:#22c55e;
+font-size:14px;
+}
+
+.status-dot{
+width:8px;
+height:8px;
+background:#22c55e;
+border-radius:50%;
+box-shadow:0 0 8px #22c55e;
+animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse{
+0%{transform:scale(1);opacity:1;}
+50%{transform:scale(1.4);opacity:.5;}
+100%{transform:scale(1);opacity:1;}
+}
+
+.system-msg {
+    display: inline-block;
+    margin: 12px auto;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #5f6368;
+  
+    border-radius: 16px;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.chat-container {
+    text-align: center;
+}
+
+
+.chat::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat::-webkit-scrollbar-track {
+  background: #0e1621;
+}
+
+.chat::-webkit-scrollbar-thumb {
+  background: rgba(34,211,238,.4);
+  border-radius: 10px;
+}
+
+.chat::-webkit-scrollbar-thumb:hover {
+  background: rgba(34,211,238,.7);
+}
+
+
+.chat {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34,211,238,.4) #0e1621;
+}
+
+
+
+
+
+
+.system {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+
+
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+
+   color:#22d3ee;
+   text-shadow:0 0 12px rgba(34,211,238,.5);
+
+   
+    border-radius: 6px;
+
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.security-badge{
+font-size:11px;
+letter-spacing:2px;
+color:#22d3ee;
+margin-bottom:10px;
+opacity:.8;
+}
+
+.subtitle{
+font-size:13px;
+opacity:.7;
+margin-bottom:20px;
+}
+
+.security-meta{
+text-align:left;
+font-size:12px;
+opacity:.75;
+margin-bottom:20px;
+line-height:1.6;
+}
+
+.security-meta strong{
+color:#22d3ee;
+}
+
+.legal-note{
+margin-top:15px;
+font-size:11px;
+opacity:.5;
+}
+
+
+.brand-watermark{
+position:absolute;
+top:15px;
+right:20px;
+font-size:10px;
+letter-spacing:3px;
+opacity:.15;
+color:#22d3ee;
+pointer-events:none;
+}
+
+
 
 .accept{background:#22c55e;}
 .decline{background:#ef4444;}
@@ -201,25 +760,115 @@ color:white;
 
 <body>
 
+<div id="lockscreen">
+  <div class="lock-card">
+    <div class="lock-icon">🔐</div>
+
+    <div class="security-badge">BLACKVAULT • ZERO TRUST SYSTEM</div>
+
+    <h2>Secure Access Required</h2>
+
+    <p class="subtitle">
+      End-to-End Encrypted Communication Channel
+    </p>
+
+
+
+    <div class="security-meta">
+      <div><strong>Encryption:</strong> AES-256 + E2EE</div>
+      <div><strong>Session ID:</strong> BVX-94A7-2F1C</div>
+      <div><strong>Status:</strong> Secure Tunnel Established</div>
+    </div>
+
+<div class="pin-instruction">
+  Enter 4-Digit Access PIN
+</div>
+
+
+
+    <div class="pin-wrapper">
+      <input type="password" id="pinInput" maxlength="4" inputmode="numeric" pattern="[0-9]*" autofocus>
+    </div>
+
+    <div id="pinError" class="pin-error">Access Denied — Invalid PIN</div>
+
+    <div class="legal-note">
+      Unauthorized access attempts are logged and monitored.
+    </div>
+  </div>
+</div>
+
+
+<div id="successToast" class="toast">
+  <div class="toast-title">ACCESS VERIFIED</div>
+  <div class="toast-sub">Encrypted Session Established</div>
+</div>
+
+
 <div class="app">
+<div class="brand-watermark">BLACKVAULT</div>
+
+
 
 <div class="sidebar" id="sidebar">
-<h3>Online Users</h3>
-<div id="userList"></div>
+<h3>Overview</h3>
+
+<div class="security-info">
+    <div>
+        <strong>End-to-End Encryption</strong><br>
+        All messages are encrypted and accessible only to participants.
+    </div>
+
+    <div>
+        <strong>Automatic Message Deletion</strong><br>
+        Messages are permanently removed when you leave the chat session.
+    </div>
+
+    <div>
+        <strong>Live Session Only</strong><br>
+        The conversation remains active only while users are online.
+    </div>
+
+    <div>
+        <strong>Built-in VPN Protection</strong><br>
+        All traffic is routed through an integrated VPN layer for enhanced privacy.
+    </div>
+
+
+ 
+</div>
+
+
+
+
 </div>
 
 <div class="header">
 <div class="header-left">
 <div class="avatar">P</div>
 <div>
-<div class="username">Privatni Razgovori</div>
-<div class="status">● Na Mreži</div>
+<div class="system">BLACKVAULT SECURE CHANNEL</div>
+<div class="status">
+  <span class="status-dot"></span>
+  Online
+</div>
+
+
 </div>
 </div>
 <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
 </div>
+<div class="system-msg"> 🔒 Messages and calls are end-to-end encrypted.
+</div>
 
 <div id="chat" class="chat"></div>
+
+<div class="typing">
+  <span></span>
+  <span></span>
+  <span></span>
+</div>
+
 
 <div class="input-area">
 <img src="call.png" onclick="startCall()" style="width:40px;cursor:pointer;">
@@ -246,6 +895,10 @@ let localStream=null;
 let timerInterval=null;
 let callSeconds=0;
 let currentCallCard=null;
+let callState = "idle"; 
+let lastMessageDate = null;
+// moguće vrijednosti: idle | calling | ringing | in-call
+
 
 const sidebar=document.getElementById("sidebar");
 const userList=document.getElementById("userList");
@@ -284,24 +937,70 @@ addMessage(msg,false);
 });
 
 function addMessage(text,isMe){
+
 const chat=document.getElementById("chat");
+
+let now = new Date();
+let today = now.toDateString();
+
+if(lastMessageDate !== today){
+  const dateDiv = document.createElement("div");
+  dateDiv.className = "date-separator";
+  dateDiv.textContent = today;
+  chat.appendChild(dateDiv);
+  lastMessageDate = today;
+}
+
 const wrapper=document.createElement("div");
 wrapper.className="message "+(isMe?"me":"other");
-wrapper.innerHTML=text+"<div class='time'>"+
-new Date().toLocaleTimeString([],{
+
+let time = now.toLocaleTimeString([],{
 hour:"2-digit",minute:"2-digit"
-})+"</div>";
+});
+
+wrapper.innerHTML = `
+${text}
+<div class='time'>
+  ${time}
+  ${isMe ? "<span class='status-indicator sent'>✓</span>" : ""}
+</div>
+`;
+
 chat.appendChild(wrapper);
 chat.scrollTop=chat.scrollHeight;
+
+if(isMe){
+setTimeout(()=>{
+const indicator = wrapper.querySelector(".status-indicator");
+if(indicator){
+indicator.textContent="✓✓";
+indicator.classList.add("read");
+}
+},1500);
 }
 
-const config={iceServers:[{urls:"stun:stun.l.google.com:19302"}]};
+}
+
+const config = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" }
+  ]
+};
 
 async function initMedia(){
-if(!localStream){
-localStream=await navigator.mediaDevices.getUserMedia({audio:true});
+  try{
+    localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: false
+    });
+
+    console.log("Microphone access granted");
+  }catch(err){
+    console.error("Microphone error:", err);
+    alert("Microphone access denied!");
+  }
 }
-}
+
 
 function createPC(){
 pc=new RTCPeerConnection(config);
@@ -338,7 +1037,9 @@ const div=document.createElement("div");
 div.className="call-card";
 
 div.innerHTML=`
-<div>Incoming Call</div>
+<div>SECURE INCOMING TRANSMISSION</div>
+
+
 <div class="call-row">
 <button class="call-btn-small accept" onclick="acceptCall()">Accept</button>
 <button class="call-btn-small decline" onclick="declineCall()">Decline</button>
@@ -351,14 +1052,32 @@ currentCallCard=div;
 }
 
 function addSystemCallCard(text){
+
 const chat=document.getElementById("chat");
 const div=document.createElement("div");
 div.className="call-card";
-div.innerHTML=`<div>${text}</div>`;
+
+if(text === "Calling..."){
+div.innerHTML = `
+<div>${text}</div>
+
+<div class="call-row">
+<button class="call-btn-small decline" onclick="cancelCall()">Cancel Call</button>
+</div>
+`;
+}else{
+div.innerHTML = `<div>${text}</div>`;
+}
+
 chat.appendChild(div);
 chat.scrollTop=chat.scrollHeight;
 currentCallCard=div;
 }
+
+
+
+
+
 
 function acceptCall(){
 incomingRing.pause();
@@ -370,19 +1089,76 @@ socket.emit("call-accepted");
 function declineCall(){
 incomingRing.pause();
 incomingRing.currentTime=0;
+callState = "idle";
+
+if(currentCallCard){
 currentCallCard.innerHTML="Call Declined";
+
+setTimeout(()=>{
+currentCallCard.remove();
+currentCallCard = null;
+},2000);
+}
+
 socket.emit("call-declined");
+}
+
+
+// 👇 OVDJE LIJEPIŠ NOVU FUNKCIJU
+function cancelCall(){
+
+ringing.pause();
+ringing.currentTime = 0;
+
+callState = "idle";
+
+socket.emit("call-cancelled");
+
+if(currentCallCard){
+currentCallCard.innerHTML = "Call Cancelled";
+
+setTimeout(()=>{
+currentCallCard.remove();
+currentCallCard = null;
+},2000);
+}
 }
 
 socket.on("call-declined",()=>{
 ringing.pause();
 ringing.currentTime=0;
+callState = "idle";
+
 if(currentCallCard){
 currentCallCard.innerHTML="Call Declined";
+
+setTimeout(()=>{
+currentCallCard.remove();
+currentCallCard = null;
+},2000);
+}
+});
+socket.on("call-cancelled",()=>{
+
+incomingRing.pause();
+incomingRing.currentTime = 0;
+
+callState = "idle";
+
+if(currentCallCard){
+currentCallCard.innerHTML = "Call Cancelled";
+
+setTimeout(()=>{
+currentCallCard.remove();
+currentCallCard = null;
+},2000);
 }
 });
 
+
 socket.on("call-accepted",async()=>{
+callState = "in-call";
+
 ringing.pause();
 ringing.currentTime=0;
 await initMedia();
@@ -394,6 +1170,8 @@ startTimer();
 });
 
 socket.on("offer",async(sdp)=>{
+callState = "in-call";
+
 await initMedia();
 createPC();
 await pc.setRemoteDescription(new RTCSessionDescription(sdp));
@@ -437,6 +1215,8 @@ endCallCleanup();
 }
 
 function endCallCleanup(){
+callState = "idle";
+
 if(pc){pc.close();pc=null;}
 if(localStream){
 localStream.getTracks().forEach(t=>t.stop());
@@ -449,9 +1229,70 @@ incomingRing.currentTime=0;
 clearInterval(timerInterval);
 if(currentCallCard){
 currentCallCard.innerHTML="Call Ended";
+
+setTimeout(()=>{
+currentCallCard.remove();
+currentCallCard = null;
+},2000);
 }
+
 }
 
 </script>
 </body>
 </html>
+
+
+<script>
+const correctPIN = "6666";
+const pinInput = document.getElementById("pinInput");
+const lockscreen = document.getElementById("lockscreen");
+const errorText = document.getElementById("pinError");
+const toast = document.getElementById("successToast");
+
+pinInput.addEventListener("input", () => {
+  if (pinInput.value.length === 4) {
+    if (pinInput.value === correctPIN) {
+      unlockApp();
+    } else {
+      showError();
+    }
+  }
+});
+
+function unlockApp() {
+
+  // 🔹 Prikaži toast
+  toast.classList.add("show");
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000);
+
+  // 🔹 Sakrij lockscreen
+  lockscreen.style.opacity = "0";
+  lockscreen.style.transition = ".4s";
+
+  setTimeout(() => {
+    lockscreen.style.display = "none";
+  }, 700);
+}
+
+function showError() {
+  errorText.classList.add("show");
+  pinInput.classList.add("shake");
+  pinInput.value = "";
+
+  setTimeout(() => {
+    pinInput.classList.remove("shake");
+  }, 400);
+}
+</script>
+
+
+
+
+
+
+
+
