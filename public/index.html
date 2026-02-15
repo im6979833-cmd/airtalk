@@ -5,7 +5,7 @@
 <title>AirTalk</title>
 
 <style>
-* { box-sizing:border-box; }
+*{box-sizing:border-box;}
 
 body{
 margin:0;
@@ -19,13 +19,45 @@ height:100vh;
 
 .app{
 width:420px;
-height:500px;
+height:520px;
 background:#17212b;
 border-radius:25px;
 display:flex;
 flex-direction:column;
 overflow:hidden;
 box-shadow:0 40px 80px rgba(0,0,0,.6);
+position:relative;
+}
+
+.sidebar{
+position:absolute;
+right:-220px;
+top:70px;
+width:220px;
+height:74%;
+background:#111827;
+transition:.3s;
+padding:15px;
+color:white;
+overflow-y:auto;
+z-index:10;
+}
+
+.sidebar.active{
+right:0;
+}
+
+.sidebar h3{
+margin-top:0;
+font-size:15px;
+}
+
+.user{
+padding:8px;
+border-radius:10px;
+background:#1f2937;
+margin-bottom:8px;
+font-size:13px;
 }
 
 .header{
@@ -33,7 +65,13 @@ height:70px;
 background:#242f3d;
 display:flex;
 align-items:center;
+justify-content:space-between;
 padding:0 15px;
+}
+
+.header-left{
+display:flex;
+align-items:center;
 gap:12px;
 }
 
@@ -49,19 +87,21 @@ font-weight:bold;
 color:white;
 }
 
-.user-info{
-display:flex;
-flex-direction:column;
-}
+.username{color:white;font-weight:600;}
+.status{font-size:13px;color:#4ade80;}
 
-.username{
+.sidebar-toggle{
+width:40px;
+height:40px;
+border-radius:10px;
+border:none;
+background:#1f2937;
 color:white;
-font-weight:600;
-}
-
-.status{
-font-size:13px;
-color:#4ade80;
+font-size:18px;
+cursor:pointer;
+display:flex;
+justify-content:center;
+align-items:center;
 }
 
 .chat{
@@ -80,19 +120,17 @@ padding:10px 14px;
 border-radius:18px;
 font-size:14px;
 line-height:1.4;
-animation:fadeIn .2s ease-in-out;
+color:white;
 }
 
 .me{
 background:#2b5278;
-color:white;
 align-self:flex-end;
 border-bottom-right-radius:5px;
 }
 
 .other{
 background:#182533;
-color:white;
 align-self:flex-start;
 border-bottom-left-radius:5px;
 }
@@ -116,7 +154,6 @@ flex:1;
 padding:12px 15px;
 border-radius:25px;
 border:none;
-outline:none;
 background:#17212b;
 color:white;
 }
@@ -129,13 +166,36 @@ border:none;
 background:#0ea5e9;
 color:white;
 cursor:pointer;
-font-size:18px;
 }
 
-@keyframes fadeIn{
-from{opacity:0;transform:translateY(5px);}
-to{opacity:1;transform:translateY(0);}
+.call-card{
+background:#1f2937;
+padding:15px;
+border-radius:15px;
+display:flex;
+flex-direction:column;
+gap:8px;
+color:white;
+font-size:14px;
 }
+
+.call-row{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.call-btn-small{
+padding:6px 12px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+color:white;
+}
+
+.accept{background:#22c55e;}
+.decline{background:#ef4444;}
+.end{background:#ef4444;}
 </style>
 </head>
 
@@ -143,18 +203,27 @@ to{opacity:1;transform:translateY(0);}
 
 <div class="app">
 
-<div class="header">
-<div class="avatar">A</div>
-<div class="user-info">
-<div class="username">AirTalk</div>
-<div class="status">● Online</div>
+<div class="sidebar" id="sidebar">
+<h3>Online Users</h3>
+<div id="userList"></div>
 </div>
+
+<div class="header">
+<div class="header-left">
+<div class="avatar">P</div>
+<div>
+<div class="username">Privatni Razgovori</div>
+<div class="status">● Na Mreži</div>
+</div>
+</div>
+<button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
 </div>
 
 <div id="chat" class="chat"></div>
 
 <div class="input-area">
-<input id="messageInput" placeholder="Write a message..." 
+<img src="call.png" onclick="startCall()" style="width:40px;cursor:pointer;">
+<input id="messageInput" placeholder="Write a message..."
 onkeypress="if(event.key==='Enter') sendMessage()">
 <button class="send-btn" onclick="sendMessage()">➤</button>
 </div>
@@ -162,141 +231,227 @@ onkeypress="if(event.key==='Enter') sendMessage()">
 </div>
 
 <audio id="remoteAudio" autoplay playsinline></audio>
+<audio id="ringing" src="kadjazovem.mp3"></audio>
+<audio id="incomingRing" src="kadprimampoziv.mp3"></audio>
+<audio id="sentSound" src="poslano.mp3"></audio>
+<audio id="receivedSound" src="primljeno.mp3"></audio>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 
 const socket = io();
+
 let pc=null;
 let localStream=null;
-let role=null;
+let timerInterval=null;
+let callSeconds=0;
+let currentCallCard=null;
 
-const config={
-iceServers:[{urls:"stun:stun.l.google.com:19302"}]
-};
+const sidebar=document.getElementById("sidebar");
+const userList=document.getElementById("userList");
+const remoteAudio=document.getElementById("remoteAudio");
+const ringing=document.getElementById("ringing");
+const incomingRing=document.getElementById("incomingRing");
+const sentSound=document.getElementById("sentSound");
+const receivedSound=document.getElementById("receivedSound");
 
-async function initMedia(){
-if(!localStream){
-localStream=await navigator.mediaDevices.getUserMedia({audio:true});
-console.log("Mic ready");
-}
-}
-
-function resetConnection(){
-if(pc){
-pc.ontrack=null;
-pc.onicecandidate=null;
-pc.close();
-pc=null;
-}
-document.getElementById("remoteAudio").srcObject=null;
+function toggleSidebar(){
+sidebar.classList.toggle("active");
 }
 
-function createPeerConnection(){
-
-resetConnection();
-
-pc=new RTCPeerConnection(config);
-
-pc.onconnectionstatechange=()=>{
-console.log("State:",pc.connectionState);
-};
-
-pc.onicecandidate=(event)=>{
-if(event.candidate){
-socket.emit("ice-candidate",event.candidate);
-}
-};
-
-pc.ontrack=(event)=>{
-const audio=document.getElementById("remoteAudio");
-audio.srcObject=event.streams[0];
-audio.play().catch(()=>{});
-};
-
-localStream.getTracks().forEach(track=>{
-pc.addTrack(track,localStream);
+socket.on("online-users",(users)=>{
+userList.innerHTML="";
+users.forEach(u=>{
+const div=document.createElement("div");
+div.className="user";
+div.textContent=u.name;
+userList.appendChild(div);
 });
-}
-
-socket.on("role",async(r)=>{
-role=r;
-console.log("Role:",role);
-await initMedia();
-});
-
-socket.on("peer-ready",async()=>{
-if(role!=="offerer")return;
-
-createPeerConnection();
-
-const offer=await pc.createOffer();
-await pc.setLocalDescription(offer);
-
-socket.emit("offer",offer);
-});
-
-socket.on("offer",async(sdp)=>{
-await initMedia();
-createPeerConnection();
-await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-
-const answer=await pc.createAnswer();
-await pc.setLocalDescription(answer);
-
-socket.emit("answer",answer);
-});
-
-socket.on("answer",async(sdp)=>{
-if(!pc)return;
-await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-});
-
-socket.on("ice-candidate",async(candidate)=>{
-if(pc){
-await pc.addIceCandidate(new RTCIceCandidate(candidate));
-}
-});
-
-socket.on("peer-disconnected",()=>{
-resetConnection();
-});
-
-socket.on("chat-message",(msg)=>{
-addMessage(msg,false);
 });
 
 function sendMessage(){
 const input=document.getElementById("messageInput");
 if(!input.value)return;
 addMessage(input.value,true);
+sentSound.play();
 socket.emit("chat-message",input.value);
 input.value="";
 }
 
-function addMessage(text,isMe){
-const chat=document.getElementById("chat");
-
-const wrapper=document.createElement("div");
-wrapper.className="message "+(isMe?"me":"other");
-
-const msg=document.createElement("div");
-msg.innerText=text;
-
-const time=document.createElement("div");
-time.className="time";
-time.innerText=new Date().toLocaleTimeString([],{
-hour:"2-digit",
-minute:"2-digit"
+socket.on("chat-message",(msg)=>{
+receivedSound.play();
+addMessage(msg,false);
 });
 
-wrapper.appendChild(msg);
-wrapper.appendChild(time);
+function addMessage(text,isMe){
+const chat=document.getElementById("chat");
+const wrapper=document.createElement("div");
+wrapper.className="message "+(isMe?"me":"other");
+wrapper.innerHTML=text+"<div class='time'>"+
+new Date().toLocaleTimeString([],{
+hour:"2-digit",minute:"2-digit"
+})+"</div>";
 chat.appendChild(wrapper);
 chat.scrollTop=chat.scrollHeight;
 }
 
-</script>
+const config={iceServers:[{urls:"stun:stun.l.google.com:19302"}]};
 
+async function initMedia(){
+if(!localStream){
+localStream=await navigator.mediaDevices.getUserMedia({audio:true});
+}
+}
+
+function createPC(){
+pc=new RTCPeerConnection(config);
+
+pc.onicecandidate=e=>{
+if(e.candidate){
+socket.emit("ice-candidate",e.candidate);
+}
+};
+
+pc.ontrack=e=>{
+remoteAudio.srcObject=e.streams[0];
+};
+
+localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+}
+
+function startCall(){
+addSystemCallCard("Calling...");
+ringing.loop=true;
+ringing.play();
+socket.emit("call-request");
+}
+
+socket.on("incoming-call",()=>{
+incomingRing.loop=true;
+incomingRing.play();
+addIncomingCallCard();
+});
+
+function addIncomingCallCard(){
+const chat=document.getElementById("chat");
+const div=document.createElement("div");
+div.className="call-card";
+
+div.innerHTML=`
+<div>Incoming Call</div>
+<div class="call-row">
+<button class="call-btn-small accept" onclick="acceptCall()">Accept</button>
+<button class="call-btn-small decline" onclick="declineCall()">Decline</button>
+</div>
+`;
+
+chat.appendChild(div);
+chat.scrollTop=chat.scrollHeight;
+currentCallCard=div;
+}
+
+function addSystemCallCard(text){
+const chat=document.getElementById("chat");
+const div=document.createElement("div");
+div.className="call-card";
+div.innerHTML=`<div>${text}</div>`;
+chat.appendChild(div);
+chat.scrollTop=chat.scrollHeight;
+currentCallCard=div;
+}
+
+function acceptCall(){
+incomingRing.pause();
+incomingRing.currentTime=0;
+currentCallCard.innerHTML="Connecting...";
+socket.emit("call-accepted");
+}
+
+function declineCall(){
+incomingRing.pause();
+incomingRing.currentTime=0;
+currentCallCard.innerHTML="Call Declined";
+socket.emit("call-declined");
+}
+
+socket.on("call-declined",()=>{
+ringing.pause();
+ringing.currentTime=0;
+if(currentCallCard){
+currentCallCard.innerHTML="Call Declined";
+}
+});
+
+socket.on("call-accepted",async()=>{
+ringing.pause();
+ringing.currentTime=0;
+await initMedia();
+createPC();
+const offer=await pc.createOffer();
+await pc.setLocalDescription(offer);
+socket.emit("offer",offer);
+startTimer();
+});
+
+socket.on("offer",async(sdp)=>{
+await initMedia();
+createPC();
+await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+const answer=await pc.createAnswer();
+await pc.setLocalDescription(answer);
+socket.emit("answer",answer);
+startTimer();
+});
+
+socket.on("answer",async(sdp)=>{
+await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+});
+
+socket.on("ice-candidate",async(c)=>{
+if(pc) await pc.addIceCandidate(new RTCIceCandidate(c));
+});
+
+socket.on("call-ended",()=>{
+endCallCleanup();
+});
+
+function startTimer(){
+callSeconds=0;
+timerInterval=setInterval(()=>{
+callSeconds++;
+let m=Math.floor(callSeconds/60);
+let s=callSeconds%60;
+currentCallCard.innerHTML=`
+<div class="call-row">
+<span>In Call</span>
+<span>${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</span>
+</div>
+<button class="call-btn-small end" onclick="endCall()">End Call</button>
+`;
+},1000);
+}
+
+function endCall(){
+socket.emit("call-ended");
+endCallCleanup();
+}
+
+function endCallCleanup(){
+if(pc){pc.close();pc=null;}
+if(localStream){
+localStream.getTracks().forEach(t=>t.stop());
+localStream=null;
+}
+ringing.pause();
+ringing.currentTime=0;
+incomingRing.pause();
+incomingRing.currentTime=0;
+clearInterval(timerInterval);
+if(currentCallCard){
+currentCallCard.innerHTML="Call Ended";
+}
+}
+
+</script>
 </body>
 </html>
