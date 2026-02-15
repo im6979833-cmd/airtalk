@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>AirTalk</title>
+
+<style>
+* { box-sizing:border-box; }
+
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+background:#0e1621;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.app{
+width:420px;
+height:500px;
+background:#17212b;
+border-radius:25px;
+display:flex;
+flex-direction:column;
+overflow:hidden;
+box-shadow:0 40px 80px rgba(0,0,0,.6);
+}
+
+.header{
+height:70px;
+background:#242f3d;
+display:flex;
+align-items:center;
+padding:0 15px;
+gap:12px;
+}
+
+.avatar{
+width:45px;
+height:45px;
+border-radius:50%;
+background:#0ea5e9;
+display:flex;
+justify-content:center;
+align-items:center;
+font-weight:bold;
+color:white;
+}
+
+.user-info{
+display:flex;
+flex-direction:column;
+}
+
+.username{
+color:white;
+font-weight:600;
+}
+
+.status{
+font-size:13px;
+color:#4ade80;
+}
+
+.chat{
+flex:1;
+padding:20px;
+overflow-y:auto;
+display:flex;
+flex-direction:column;
+gap:10px;
+background:#0e1621;
+}
+
+.message{
+max-width:75%;
+padding:10px 14px;
+border-radius:18px;
+font-size:14px;
+line-height:1.4;
+animation:fadeIn .2s ease-in-out;
+}
+
+.me{
+background:#2b5278;
+color:white;
+align-self:flex-end;
+border-bottom-right-radius:5px;
+}
+
+.other{
+background:#182533;
+color:white;
+align-self:flex-start;
+border-bottom-left-radius:5px;
+}
+
+.time{
+font-size:10px;
+opacity:.6;
+margin-top:5px;
+text-align:right;
+}
+
+.input-area{
+background:#242f3d;
+padding:10px;
+display:flex;
+gap:10px;
+}
+
+input{
+flex:1;
+padding:12px 15px;
+border-radius:25px;
+border:none;
+outline:none;
+background:#17212b;
+color:white;
+}
+
+.send-btn{
+width:45px;
+height:45px;
+border-radius:50%;
+border:none;
+background:#0ea5e9;
+color:white;
+cursor:pointer;
+font-size:18px;
+}
+
+@keyframes fadeIn{
+from{opacity:0;transform:translateY(5px);}
+to{opacity:1;transform:translateY(0);}
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="header">
+<div class="avatar">A</div>
+<div class="user-info">
+<div class="username">AirTalk</div>
+<div class="status">● Online</div>
+</div>
+</div>
+
+<div id="chat" class="chat"></div>
+
+<div class="input-area">
+<input id="messageInput" placeholder="Write a message..." 
+onkeypress="if(event.key==='Enter') sendMessage()">
+<button class="send-btn" onclick="sendMessage()">➤</button>
+</div>
+
+</div>
+
+<audio id="remoteAudio" autoplay playsinline></audio>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+
+const socket = io();
+let pc=null;
+let localStream=null;
+let role=null;
+
+const config={
+iceServers:[{urls:"stun:stun.l.google.com:19302"}]
+};
+
+async function initMedia(){
+if(!localStream){
+localStream=await navigator.mediaDevices.getUserMedia({audio:true});
+console.log("Mic ready");
+}
+}
+
+function resetConnection(){
+if(pc){
+pc.ontrack=null;
+pc.onicecandidate=null;
+pc.close();
+pc=null;
+}
+document.getElementById("remoteAudio").srcObject=null;
+}
+
+function createPeerConnection(){
+
+resetConnection();
+
+pc=new RTCPeerConnection(config);
+
+pc.onconnectionstatechange=()=>{
+console.log("State:",pc.connectionState);
+};
+
+pc.onicecandidate=(event)=>{
+if(event.candidate){
+socket.emit("ice-candidate",event.candidate);
+}
+};
+
+pc.ontrack=(event)=>{
+const audio=document.getElementById("remoteAudio");
+audio.srcObject=event.streams[0];
+audio.play().catch(()=>{});
+};
+
+localStream.getTracks().forEach(track=>{
+pc.addTrack(track,localStream);
+});
+}
+
+socket.on("role",async(r)=>{
+role=r;
+console.log("Role:",role);
+await initMedia();
+});
+
+socket.on("peer-ready",async()=>{
+if(role!=="offerer")return;
+
+createPeerConnection();
+
+const offer=await pc.createOffer();
+await pc.setLocalDescription(offer);
+
+socket.emit("offer",offer);
+});
+
+socket.on("offer",async(sdp)=>{
+await initMedia();
+createPeerConnection();
+await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
+const answer=await pc.createAnswer();
+await pc.setLocalDescription(answer);
+
+socket.emit("answer",answer);
+});
+
+socket.on("answer",async(sdp)=>{
+if(!pc)return;
+await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+});
+
+socket.on("ice-candidate",async(candidate)=>{
+if(pc){
+await pc.addIceCandidate(new RTCIceCandidate(candidate));
+}
+});
+
+socket.on("peer-disconnected",()=>{
+resetConnection();
+});
+
+socket.on("chat-message",(msg)=>{
+addMessage(msg,false);
+});
+
+function sendMessage(){
+const input=document.getElementById("messageInput");
+if(!input.value)return;
+addMessage(input.value,true);
+socket.emit("chat-message",input.value);
+input.value="";
+}
+
+function addMessage(text,isMe){
+const chat=document.getElementById("chat");
+
+const wrapper=document.createElement("div");
+wrapper.className="message "+(isMe?"me":"other");
+
+const msg=document.createElement("div");
+msg.innerText=text;
+
+const time=document.createElement("div");
+time.className="time";
+time.innerText=new Date().toLocaleTimeString([],{
+hour:"2-digit",
+minute:"2-digit"
+});
+
+wrapper.appendChild(msg);
+wrapper.appendChild(time);
+chat.appendChild(wrapper);
+chat.scrollTop=chat.scrollHeight;
+}
+
+</script>
+
+</body>
+</html>
