@@ -9,46 +9,58 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, "public")));
 
-const ROOM = "airtalk";
+let onlineUsers = {};
+let userCounter = 0; // Brojač korisnika
 
 io.on("connection", (socket) => {
 
-    socket.join(ROOM);
+    // Povećaj brojač
+    userCounter++;
 
-    const clients = Array.from(io.sockets.adapter.rooms.get(ROOM) || []);
-    console.log("Connected:", socket.id, "Clients:", clients.length);
+    // Dodaj korisnika sa numeracijom
+    onlineUsers[socket.id] = {
+        id: socket.id,
+        name: "Korisnik " + userCounter
+    };
 
-    if (clients.length === 1) {
-        socket.emit("role", "offerer");
-    }
+    // Pošalji svima update liste
+    io.emit("online-users", Object.values(onlineUsers));
 
-    if (clients.length === 2) {
-        const [first, second] = clients;
+    socket.on("disconnect", () => {
+        delete onlineUsers[socket.id];
+        io.emit("online-users", Object.values(onlineUsers));
+    });
 
-        io.to(first).emit("role", "offerer");
-        io.to(second).emit("role", "answerer");
+    socket.on("call-request", () => {
+        socket.broadcast.emit("incoming-call");
+    });
 
-        io.to(first).emit("peer-ready");
-    }
+    socket.on("call-accepted", () => {
+        socket.broadcast.emit("call-accepted");
+    });
+
+    socket.on("call-declined", () => {
+        socket.broadcast.emit("call-declined");
+    });
+
+    socket.on("call-ended", () => {
+        socket.broadcast.emit("call-ended");
+    });
 
     socket.on("offer", (offer) => {
-        socket.to(ROOM).emit("offer", offer);
+        socket.broadcast.emit("offer", offer);
     });
 
     socket.on("answer", (answer) => {
-        socket.to(ROOM).emit("answer", answer);
+        socket.broadcast.emit("answer", answer);
     });
 
     socket.on("ice-candidate", (candidate) => {
-        socket.to(ROOM).emit("ice-candidate", candidate);
+        socket.broadcast.emit("ice-candidate", candidate);
     });
 
     socket.on("chat-message", (msg) => {
-        socket.to(ROOM).emit("chat-message", msg);
-    });
-
-    socket.on("disconnect", () => {
-        socket.to(ROOM).emit("peer-disconnected");
+        socket.broadcast.emit("chat-message", msg);
     });
 
 });
